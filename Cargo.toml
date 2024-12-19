@@ -1,0 +1,12 @@
+[package]
+name = "movie-data-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.9.0"
+serde = { version = "1.0.216", features = ["derive"] }
+serde_json = "1.0.133"
+sqlx = { version = "0.8.2", features = ["postgres", "runtime-tokio-native-tls", "macros"] }
+dotenv = "0.15.0"
+tokio = { version = "1.42.0", features = ["full"] }
