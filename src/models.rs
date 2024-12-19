@@ -1,7 +1,7 @@
 use serde::Serialize;
 use chrono::NaiveDate;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Movie {
     pub movie_id: i32,
     pub movie_name: String,
@@ -12,11 +12,11 @@ pub struct Movie {
     pub director_id: Option<i32>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct SearchResult {
     pub movie_id: i32,
     pub movie_name: String,
-    pub actors: Option<Vec<String>>, // Changed from Vec<String> to Option<Vec<String>>
+    pub actors: Option<Vec<String>>,
     pub director: Option<String>,
     pub release_date: Option<NaiveDate>,
 }

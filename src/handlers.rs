@@ -3,24 +3,34 @@ use sqlx::PgPool;
 use serde::Deserialize;
 
 use crate::models::SearchResult;
+use crate::cache::QueryCache;
 
 #[derive(Deserialize)]
 pub struct SearchQuery {
     query: String,
 }
 
-// src/handlers.rs
-
-pub async fn search_movies(pool: web::Data<PgPool>, params: web::Query<SearchQuery>) -> impl Responder {
+pub async fn search_movies(
+    pool: web::Data<PgPool>,
+    cache: web::Data<QueryCache>,
+    params: web::Query<SearchQuery>
+) -> impl Responder {
     let query = params.query.trim();
 
     if query.is_empty() {
         return HttpResponse::BadRequest().body("Query parameter cannot be empty");
     }
 
-    // Replace spaces with & to perform an AND search
     let ts_query = query.split_whitespace().collect::<Vec<&str>>().join(" & ");
 
+    // Check the cache first
+    if let Some(cached_results) = cache.get(&ts_query) {
+        println!("Cache hit for query: '{}'", ts_query);
+        return HttpResponse::Ok().json(cached_results);
+    }
+
+    println!("Cache miss for query: '{}', fetching from the database.", ts_query);
+    // If not in cache, query the database
     let results = sqlx::query_as!(
         SearchResult,
         r#"
@@ -46,7 +56,10 @@ pub async fn search_movies(pool: web::Data<PgPool>, params: web::Query<SearchQue
         .await;
 
     match results {
-        Ok(movies) => HttpResponse::Ok().json(movies),
+        Ok(movies) => {
+            cache.set(ts_query.clone(), movies.clone());
+            HttpResponse::Ok().json(movies)
+        }
         Err(e) => {
             eprintln!("Search error: {:?}", e);
             HttpResponse::InternalServerError().body("Internal Server Error")
